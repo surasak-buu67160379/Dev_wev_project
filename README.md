@@ -80,3 +80,8 @@ docker compose up -d --build
     -Authentication: POST /register, POST /login, POST /logout, POST /change-password
 
     -User Management: GET /me, GET /users/{id}, GET /users (รองรับ Pagination), PUT /users/{id}, DELETE /users/{id}, GET /check-username/{name}
+
+
+สมาชิก
+1.67160379 นายสุรศักดิ์ นึกรักษ์ 
+2.67160326 นายชัชชนม์ โทสวนจิตร
