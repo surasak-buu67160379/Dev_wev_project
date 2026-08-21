@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FacePlay - Game Login</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      background: #1e1e1e;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      width: 320px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #4f46e5;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #333;
+      background: #2a2a2a;
+      color: #fff;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 6px;
+      background: #4f46e5;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #4338ca;
+    }
+
+    .btn-reg {
+      background: #059669;
+      margin-top: 5px;
+    }
+
+    .btn-reg:hover {
+      background: #047857;
+    }
+
+    #message {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+    <h2>🎮 FacePlay Login</h2>
+    <input type="text" id="username" placeholder="ชื่อผู้ใช้งาน (Username)">
+    <input type="password" id="password" placeholder="รหัสผ่าน (Password)">
+
+    <button onclick="handleLogin()">เข้าสู่ระบบ (Login)</button>
+    <!-- ปุ่มวาร์ปไปหน้าสมัครสมาชิก -->
+    <button class="btn-reg" onclick="window.location.href='register.html'">สมัครสมาชิก (Register)</button>
+
+    <p id="message"></p>
+  </div>
+
+  <script>
+    const API_URL = "http://localhost:8000";
+
+    async function handleLogin() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("message");
+
+      if (!username || !password) {
+        msg.style.color = "#f87171";
+        msg.innerText = "กรุณากรอกข้อมูลให้ครบถ้วน!";
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          msg.style.color = "#34d399";
+          msg.innerText = "เข้าสู่ระบบสำเร็จ! กำลังเข้าเกม...";
+          localStorage.setItem("faceplay_user", data.username);
+          setTimeout(() => {
+            window.location.href = "game.html";
+          }, 1000);
+        } else {
+          msg.style.color = "#f87171";
+          msg.innerText = data.detail || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+        }
+      } catch (error) {
+        msg.style.color = "#f87171";
+        msg.innerText = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์หลังบ้านได้";
+      }
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FacePlay - Game Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+    <style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .game-card.active-sushi {
+            border-color: #ec4899;
+            background-color: rgba(236, 72, 153, 0.25);
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+            transform: scale(1.04);
+        }
+
+        .game-card.active-dodge {
+            border-color: #06b6d4;
+            background-color: rgba(6, 182, 212, 0.25);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+            transform: scale(1.04);
+        }
+
+        .game-card.active-smile {
+            border-color: #eab308;
+            background-color: rgba(234, 179, 8, 0.25);
+            box-shadow: 0 0 20px rgba(234, 179, 8, 0.4);
+            transform: scale(1.04);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-gray-950 text-white min-h-screen w-full overflow-hidden flex items-center justify-center select-none font-sans m-0 p-0">
+
+    <div id="appContainer"
+        class="relative w-full h-screen max-w-md bg-black shadow-2xl overflow-hidden flex flex-col justify-between">
+
+        <video id="webcam" class="hidden" autoplay playsinline></video>
+        <canvas id="gameCanvas" class="absolute inset-0 w-full h-full object-cover z-0"></canvas>
+
+        <!-- Top UI -->
+        <div id="gameUI"
+            class="hidden absolute top-5 inset-x-4 flex justify-between items-start z-20 pointer-events-none">
+            <div class="flex flex-col gap-2 pointer-events-auto">
+                <button id="backBtn" onclick="backToMenu()"
+                    class="bg-gray-800/80 hover:bg-gray-700 p-2.5 w-fit rounded-full backdrop-blur-sm border border-gray-600 active:scale-90 transition-all cursor-pointer shadow-lg"
+                    title="กลับหน้าเมนู">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </button>
+                <div
+                    class="bg-black/70 px-3.5 py-1.5 rounded-full border border-gray-600 backdrop-blur-sm flex items-center gap-2 shadow-lg">
+                    <span class="text-xs text-gray-300 font-bold">SCORE:</span>
+                    <span id="scoreText" class="font-black text-xl text-green-400">0</span>
+                </div>
+            </div>
+            <div class="flex flex-col items-end gap-1.5 pointer-events-auto">
+                <div id="livesText" class="text-2xl drop-shadow-md tracking-widest text-right">❤️❤️❤️</div>
+                <div
+                    class="bg-black/70 px-3 py-1 rounded-full text-xs text-yellow-400 border border-gray-600 backdrop-blur-sm shadow-lg flex items-center gap-1.5">
+                    <span>👤</span>
+                    <span id="player-tag" class="font-bold truncate max-w-[110px]"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Panel -->
+        <div id="menuPanel"
+            class="absolute inset-0 flex flex-col justify-end z-30 bg-gradient-to-t from-black via-black/95 to-gray-900/80 transition-all duration-500">
+            <div class="p-6 text-center mb-1">
+                <div class="flex justify-between items-center mb-2">
+                    <h1
+                        class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500">
+                        FacePlay</h1>
+                    <button onclick="openSettingsModal()"
+                        class="bg-gray-800 border border-gray-700 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 hover:bg-gray-700 active:scale-95 transition-all cursor-pointer">
+                        ⚙️ ตั้งค่า & จัดการระบบ
+                    </button>
+                </div>
+                <p class="text-gray-300 text-sm">ยินดีต้อนรับคุณ <span id="menu-player-tag"
+                        class="text-yellow-400 font-bold"></span></p>
+                <p class="text-gray-400 text-xs mt-1">เลือกฟิลเตอร์เกมแล้วลุยเลย!</p>
+            </div>
+
+            <div class="flex justify-center items-center gap-3 px-4 pb-4">
+                <button onclick="selectGame('sushi', this)"
+                    class="game-card flex-1 max-w-[120px] h-44 bg-gray-800/90 rounded-2xl border-2 border-gray-600 flex flex-col items-center justify-center gap-2 hover:border-pink-500 transition-all cursor-pointer active:scale-95 shadow-md">
+                    <span class="text-4xl drop-shadow-lg">🍣</span>
+                    <div class="text-center px-1"><span class="block text-xs font-bold text-white">กินซูชิ</span><span
+                            class="block text-[9px] text-gray-400 mt-0.5">อ้าปากงับ</span></div>
+                </button>
+                <button onclick="selectGame('dodge', this)"
+                    class="game-card flex-1 max-w-[120px] h-44 bg-gray-800/90 rounded-2xl border-2 border-gray-600 flex flex-col items-center justify-center gap-2 hover:border-cyan-500 transition-all cursor-pointer active:scale-95 shadow-md">
+                    <span class="text-4xl drop-shadow-lg">📁</span>
+                    <div class="text-center px-1"><span class="block text-xs font-bold text-white">หลบงาน</span><span
+                            class="block text-[9px] text-gray-400 mt-0.5">โยกหัวหลบ</span></div>
+                </button>
+                <button onclick="selectGame('smile', this)"
+                    class="game-card flex-1 max-w-[120px] h-44 bg-gray-800/90 rounded-2xl border-2 border-gray-600 flex flex-col items-center justify-center gap-2 hover:border-yellow-500 transition-all cursor-pointer active:scale-95 shadow-md">
+                    <span class="text-4xl drop-shadow-lg">💰</span>
+                    <div class="text-center px-1"><span
+                            class="block text-xs font-bold text-white">ยิ้มรับทรัพย์</span><span
+                            class="block text-[9px] text-gray-400 mt-0.5">ยิ้มชนเหรียญ</span></div>
+                </button>
+            </div>
+
+            <div class="px-6 pb-8 flex flex-col gap-2.5">
+                <button id="startBtn" onclick="startGame()" disabled
+                    class="w-full bg-gray-700 text-gray-400 font-black py-3.5 rounded-2xl shadow-lg transition-all text-lg tracking-wide disabled:opacity-50">กรุณาเลือกเกม</button>
+                <button onclick="handleLogout()"
+                    class="w-full bg-red-600/80 hover:bg-red-600 text-white font-bold py-2.5 rounded-2xl text-sm transition-all cursor-pointer">ออกจากระบบ
+                    (Logout)</button>
+            </div>
+        </div>
+
+        <!-- ⚙️ Modal ตั้งค่า & User Management Panel -->
+        <div id="settingsModal"
+            class="hidden absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+            <div
+                class="bg-gray-900 border border-gray-700 w-full max-w-sm rounded-3xl p-5 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                    <h3 class="font-bold text-base text-yellow-400">⚙️ จัดการระบบผู้ใช้งาน</h3>
+                    <button onclick="closeSettingsModal()"
+                        class="text-gray-400 hover:text-white font-bold text-xl cursor-pointer">&times;</button>
+                </div>
+
+                <!-- 1. ข้อมูลตัวเอง (/me) -->
+                <div class="bg-gray-800/60 p-3 rounded-xl text-xs space-y-1">
+                    <p class="font-bold text-gray-300">ข้อมูลของคุณ (GET /me)</p>
+                    <p class="text-gray-400">ID: <span id="profile-id" class="text-white font-mono">-</span></p>
+                    <p class="text-gray-400">Username: <span id="profile-username" class="text-white font-bold">-</span>
+                    </p>
+                </div>
+
+                <!-- 2. เปลี่ยนรหัสผ่าน (/change-password) -->
+                <div class="space-y-1.5 bg-gray-800/30 p-3 rounded-xl border border-gray-800">
+                    <p class="text-xs font-bold text-gray-300">เปลี่ยนรหัสผ่าน</p>
+                    <input type="password" id="old-pass" placeholder="รหัสผ่านเดิม"
+                        class="w-full bg-gray-950 border border-gray-700 px-3 py-1.5 rounded-lg text-xs text-white">
+                    <input type="password" id="new-pass" placeholder="รหัสผ่านใหม่"
+                        class="w-full bg-gray-950 border border-gray-700 px-3 py-1.5 rounded-lg text-xs text-white">
+                    <button onclick="submitChangePassword()"
+                        class="w-full bg-blue-600 hover:bg-blue-500 py-1.5 rounded-lg font-bold text-xs cursor-pointer">อัปเดตรหัสผ่าน</button>
+                </div>
+
+                <!-- 3. ค้นหา User ตาม ID (/users/{id}) -->
+                <div class="space-y-1.5 bg-gray-800/30 p-3 rounded-xl border border-gray-800">
+                    <p class="text-xs font-bold text-gray-300">ค้นหาผู้ใช้ด้วย ID (GET /users/{id})</p>
+                    <div class="flex gap-2">
+                        <input type="number" id="search-id" placeholder="ระบุ ID"
+                            class="w-full bg-gray-950 border border-gray-700 px-3 py-1.5 rounded-lg text-xs text-white">
+                        <button onclick="searchUserById()"
+                            class="bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-lg font-bold text-xs cursor-pointer">ค้นหา</button>
+                    </div>
+                    <p id="search-result" class="text-[11px] text-gray-400 h-4"></p>
+                </div>
+
+                <!-- 4. ดึงรายชื่อ User ทั้งหมด (/users) -->
+                <div class="space-y-1.5 bg-gray-800/30 p-3 rounded-xl border border-gray-800">
+                    <div class="flex justify-between items-center">
+                        <p class="text-xs font-bold text-gray-300">รายชื่อสมาชิกทั้งหมด (GET /users)</p>
+                        <button onclick="loadAllUsers()"
+                            class="bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded text-[10px] cursor-pointer">โหลดรายชื่อ</button>
+                    </div>
+                    <div id="users-list"
+                        class="max-h-24 overflow-y-auto text-[11px] text-gray-400 space-y-1 bg-gray-950 p-2 rounded-lg">
+                        <p>กดปุ่ม "โหลดรายชื่อ" เพื่อแสดงข้อมูล</p>
+                    </div>
+                </div>
+
+                <!-- 5 & 6. แก้ไข และ ลบ User (PUT /users/{id}, DELETE /users/{id}) -->
+                <div class="space-y-1.5 bg-gray-800/30 p-3 rounded-xl border border-gray-800">
+                    <p class="text-xs font-bold text-gray-300">จัดการข้อมูล User (PUT / DELETE)</p>
+                    <input type="number" id="target-id" placeholder="ID ที่ต้องการแก้ไข/ลบ"
+                        class="w-full bg-gray-950 border border-gray-700 px-3 py-1.5 rounded-lg text-xs text-white">
+                    <input type="text" id="target-username" placeholder="Username ใหม่"
+                        class="w-full bg-gray-950 border border-gray-700 px-3 py-1.5 rounded-lg text-xs text-white">
+                    <input type="password" id="target-password" placeholder="Password ใหม่"
+                        class="w-full bg-gray-950 border border-gray-700 px-3 py-1.5 rounded-lg text-xs text-white">
+                    <div class="flex gap-2 pt-1">
+                        <button onclick="updateUserById()"
+                            class="flex-1 bg-amber-600 hover:bg-amber-500 py-1.5 rounded-lg font-bold text-xs cursor-pointer">แก้ไขข้อมูล</button>
+                        <button onclick="deleteUserById()"
+                            class="flex-1 bg-red-600 hover:bg-red-500 py-1.5 rounded-lg font-bold text-xs cursor-pointer">ลบผู้ใช้</button>
+                    </div>
+                </div>
+
+                <p id="settings-msg" class="text-center text-xs h-4"></p>
+                <button onclick="handleLogout()"
+                    class="w-full bg-red-600/80 hover:bg-red-600 text-white font-bold py-2 rounded-xl text-xs transition-all cursor-pointer">ออกจากระบบ
+                    (Logout)</button>
+            </div>
+        </div>
+
+        <!-- Game Over UI -->
+        <div id="gameOverUI"
+            class="hidden absolute inset-0 z-40 bg-black/90 backdrop-blur-md flex-col items-center justify-center p-6 text-center">
+            <h2 class="text-4xl sm:text-5xl font-black text-white mb-2">GAME OVER</h2>
+            <p id="gameOverMsg" class="text-gray-400 mb-5 font-medium">คุณทำคะแนนได้</p>
+            <div
+                class="bg-gray-800/60 w-full max-w-xs rounded-2xl p-6 mb-6 border border-gray-700 text-center shadow-lg">
+                <p class="text-6xl font-black text-green-400" id="finalScore">0</p>
+            </div>
+            <div class="w-full max-w-xs flex flex-col gap-3">
+                <button onclick="restartGame()"
+                    class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-3.5 rounded-xl shadow-[0_0_20px_rgba(236,72,153,0.4)] active:scale-95 text-base cursor-pointer">เล่นอีกครั้ง
+                    🔄</button>
+                <button onclick="backToMenu()"
+                    class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3.5 rounded-xl active:scale-95 text-base cursor-pointer">กลับหน้าเมนู</button>
+            </div>
+        </div>
+
+        <!-- Loading AI -->
+        <div id="loadingUI"
+            class="hidden absolute inset-0 z-50 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-4 border-pink-500 border-t-transparent mb-4"></div>
+            <p class="text-white font-bold tracking-widest animate-pulse">กำลังเปิดกล้องและโหลด AI...</p>
+        </div>
+    </div>
+
+    <!-- JavaScript Core & API Management Functions -->
+    <script>
+        const API_URL = "http://localhost:8000";
+        const loggedUser = localStorage.getItem("faceplay_user");
+
+        if (!loggedUser) {
+            window.location.href = "index.html";
+        } else {
+            document.getElementById("player-tag").innerText = loggedUser;
+            document.getElementById("menu-player-tag").innerText = loggedUser;
+        }
+
+        // --- User Management API Functions ---
+        async function openSettingsModal() {
+            document.getElementById("settingsModal").classList.remove("hidden");
+            document.getElementById("settingsModal").classList.add("flex");
+            try {
+                const res = await fetch(`${API_URL}/me?username=${loggedUser}`);
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById("profile-id").innerText = data.id;
+                    document.getElementById("profile-username").innerText = data.username;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function closeSettingsModal() {
+            document.getElementById("settingsModal").classList.remove("flex");
+            document.getElementById("settingsModal").classList.add("hidden");
+            document.getElementById("settings-msg").innerText = "";
+        }
+
+        async function submitChangePassword() {
+            const old_password = document.getElementById("old-pass").value;
+            const new_password = document.getElementById("new-pass").value;
+            const msg = document.getElementById("settings-msg");
+
+            if (!old_password || !new_password) { msg.style.color = "#f87171"; msg.innerText = "กรุณากรอกรหัสผ่านให้ครบถ้วน"; return; }
+
+            try {
+                const res = await fetch(`${API_URL}/change-password`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: loggedUser, old_password, new_password })
+                });
+                const data = await res.json();
+                msg.style.color = res.ok ? "#34d399" : "#f87171";
+                msg.innerText = res.ok ? "เปลี่ยนรหัสผ่านสำเร็จ!" : data.detail;
+                if (res.ok) { document.getElementById("old-pass").value = ""; document.getElementById("new-pass").value = ""; }
+            } catch (e) { msg.style.color = "#f87171"; msg.innerText = "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้"; }
+        }
+
+        async function searchUserById() {
+            const id = document.getElementById("search-id").value;
+            const resBox = document.getElementById("search-result");
+            if (!id) return;
+            try {
+                const res = await fetch(`${API_URL}/users/${id}`);
+                const data = await res.json();
+                if (res.ok) {
+                    resBox.style.color = "#34d399";
+                    resBox.innerText = `พบ User: ID ${data.id} - ${data.username}`;
+                } else {
+                    resBox.style.color = "#f87171";
+                    resBox.innerText = data.detail || "ไม่พบข้อมูล";
+                }
+            } catch (e) { resBox.innerText = "เกิดข้อผิดพลาด"; }
+        }
+
+        async function loadAllUsers() {
+            const listBox = document.getElementById("users-list");
+            try {
+                const res = await fetch(`${API_URL}/users?limit=10&offset=0`);
+                const data = await res.json();
+                if (res.ok && data.users.length > 0) {
+                    listBox.innerHTML = data.users.map(u => `<div>ID: ${u.id} | <b>${u.username}</b></div>`).join('');
+                } else {
+                    listBox.innerHTML = "ไม่พบสมาชิกในระบบ";
+                }
+            } catch (e) { listBox.innerHTML = "โหลดข้อมูลไม่สำเร็จ"; }
+        }
+
+        async function updateUserById() {
+            const id = document.getElementById("target-id").value;
+            const username = document.getElementById("target-username").value;
+            const password = document.getElementById("target-password").value;
+            const msg = document.getElementById("settings-msg");
+
+            if (!id || !username || !password) { msg.style.color = "#f87171"; msg.innerText = "กรอกข้อมูลช่องแก้ไขให้ครบ"; return; }
+
+            try {
+                const res = await fetch(`${API_URL}/users/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                msg.style.color = res.ok ? "#34d399" : "#f87171";
+                msg.innerText = res.ok ? data.message : data.detail;
+            } catch (e) { msg.style.color = "#f87171"; msg.innerText = "แก้ไขไม่สำเร็จ"; }
+        }
+
+        async function deleteUserById() {
+            const id = document.getElementById("target-id").value;
+            const msg = document.getElementById("settings-msg");
+            if (!id) { msg.style.color = "#f87171"; msg.innerText = "กรุณาระบุ ID ที่ต้องการลบ"; return; }
+
+            if (!confirm(`ยืนยันการลบ User ID ${id} ใช่หรือไม่?`)) return;
+
+            try {
+                const res = await fetch(`${API_URL}/users/${id}`, { method: "DELETE" });
+                const data = await res.json();
+                msg.style.color = res.ok ? "#34d399" : "#f87171";
+                msg.innerText = res.ok ? data.message : data.detail;
+                loadAllUsers();
+            } catch (e) { msg.style.color = "#f87171"; msg.innerText = "ลบไม่สำเร็จ"; }
+        }
+
+        function handleLogout() {
+            fetch(`${API_URL}/logout`, { method: "POST" }).catch(() => { });
+            localStorage.removeItem("faceplay_user");
+            window.location.href = "index.html";
+        }
+
+        // --- Game System Core ---
+        const container = document.getElementById('appContainer');
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let isAILoaded = false, camera, faceMesh, playerFace = null, latestFrame = null;
+
+        function updateCanvasDimensions() {
+            if (container) { canvas.width = container.clientWidth || 400; canvas.height = container.clientHeight || 700; }
+        }
+        updateCanvasDimensions();
+        window.addEventListener('resize', updateCanvasDimensions);
+
+        let game = { id: '', isRunning: false, score: 0, lives: 3, items: [], frameCount: 0 };
+
+        function selectGame(id, btnElement) {
+            game.id = id;
+            document.querySelectorAll('.game-card').forEach(card => card.classList.remove('active-sushi', 'active-dodge', 'active-smile'));
+            if (btnElement) btnElement.classList.add(`active-${id}`);
+            const startBtn = document.getElementById('startBtn');
+            startBtn.disabled = false;
+            startBtn.innerText = "ลุยเลย! (START)";
+            startBtn.className = "w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-black py-3.5 rounded-2xl shadow-[0_0_25px_rgba(236,72,153,0.5)] active:scale-95 transition-all text-lg cursor-pointer";
+        }
+
+        async function startGame() {
+            document.getElementById('menuPanel').classList.add('translate-y-full', 'opacity-0');
+            document.getElementById('gameUI').classList.remove('hidden');
+            resetGameStats();
+            if (!isAILoaded) {
+                document.getElementById('loadingUI').classList.remove('hidden');
+                document.getElementById('loadingUI').classList.add('flex');
+                await initAI();
+            } else { game.isRunning = true; }
+        }
+
+        function backToMenu() {
+            game.isRunning = false;
+            document.getElementById('gameOverUI').classList.add('hidden');
+            document.getElementById('gameOverUI').classList.remove('flex');
+            document.getElementById('gameUI').classList.add('hidden');
+            document.getElementById('menuPanel').classList.remove('translate-y-full', 'opacity-0');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function restartGame() {
+            document.getElementById('gameOverUI').classList.add('hidden');
+            document.getElementById('gameOverUI').classList.remove('flex');
+            resetGameStats();
+            game.isRunning = true;
+        }
+
+        function resetGameStats() {
+            game.score = 0; game.lives = 3; game.items = []; game.frameCount = 0; updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('scoreText').innerText = game.score;
+            let hearts = "";
+            for (let i = 0; i < game.lives; i++) hearts += "❤️";
+            for (let i = game.lives; i < 3; i++) hearts += "🖤";
+            document.getElementById('livesText').innerText = hearts;
+            if (game.lives <= 0) {
+                game.isRunning = false;
+                document.getElementById('finalScore').innerText = game.score;
+                document.getElementById('gameOverMsg').innerText = "คุณทำคะแนนได้";
+                document.getElementById('gameOverUI').classList.remove('hidden');
+                document.getElementById('gameOverUI').classList.add('flex');
+            }
+        }
+
+        function getFacePointCoordinates(point) {
+            const cw = canvas.width, ch = canvas.height, vw = video.videoWidth || 640, vh = video.videoHeight || 480;
+            const scale = Math.max(cw / vw, ch / vh);
+            const renderW = vw * scale, renderH = vh * scale;
+            const offsetX = (cw - renderW) / 2, offsetY = (ch - renderH) / 2;
+            return { x: offsetX + (1 - point.x) * renderW, y: offsetY + point.y * renderH, scale };
+        }
+
+        function processGameLogic() {
+            if (!game.isRunning) return;
+            game.frameCount++;
+            const cw = canvas.width, ch = canvas.height;
+
+            if (game.id === 'sushi' && Math.random() < 0.02) {
+                game.items.push({ x: Math.random() * (cw - 80) + 40, y: -50, speed: 4 + Math.random() * 3, emoji: '🍣' });
+            } else if (game.id === 'dodge' && Math.random() < 0.05) {
+                const emojis = ['📁', '📧', '📉'];
+                game.items.push({ x: Math.random() * (cw - 80) + 40, y: -50, speed: 5 + Math.random() * 4, emoji: emojis[Math.floor(Math.random() * 3)] });
+            } else if (game.id === 'smile' && game.frameCount % 60 === 0) {
+                game.items.push({ x: Math.random() * (cw - 80) + 40, y: -50, speed: 4.5, emoji: '💰' });
+            }
+
+            let noseX = 0, noseY = 0, mouthX = 0, mouthY = 0, isMouthOpen = false, isSmiling = false;
+            if (playerFace) {
+                const nose = getFacePointCoordinates(playerFace[1]);
+                noseX = nose.x; noseY = nose.y;
+                const mouth = getFacePointCoordinates(playerFace[13]);
+                mouthX = mouth.x; mouthY = mouth.y;
+                isMouthOpen = (playerFace[14].y - playerFace[13].y) > 0.04;
+                const faceWidth = Math.abs(playerFace[234].x - playerFace[454].x);
+                isSmiling = (Math.abs(playerFace[291].x - playerFace[61].x) / faceWidth) > 0.45;
+            }
+
+            for (let i = game.items.length - 1; i >= 0; i--) {
+                let item = game.items[i];
+                item.y += item.speed;
+                if (game.id === 'sushi' && playerFace) {
+                    if (Math.hypot(mouthX - item.x, mouthY - item.y) < 45 && isMouthOpen) { game.score += 10; updateUI(); game.items.splice(i, 1); continue; }
+                    if (item.y > ch) { game.lives--; updateUI(); game.items.splice(i, 1); continue; }
+                }
+                if (game.id === 'dodge' && playerFace) {
+                    if (Math.hypot(noseX - item.x, noseY - item.y) < 45) { game.lives--; updateUI(); game.items.splice(i, 1); continue; }
+                    if (item.y > ch) { game.score += 10; updateUI(); game.items.splice(i, 1); continue; }
+                }
+                if (game.id === 'smile' && playerFace) {
+                    if (Math.hypot(noseX - item.x, noseY - item.y) < 50) {
+                        if (isSmiling) { game.score += 20; } else { game.lives--; }
+                        updateUI(); game.items.splice(i, 1); continue;
+                    }
+                    if (item.y > ch) { game.items.splice(i, 1); continue; }
+                }
+            }
+        }
+
+        function drawGame() {
+            const cw = canvas.width, ch = canvas.height, vw = video.videoWidth || 640, vh = video.videoHeight || 480;
+            if (latestFrame) {
+                const scale = Math.max(cw / vw, ch / vh);
+                const renderW = vw * scale, renderH = vh * scale;
+                const offsetX = (cw - renderW) / 2, offsetY = (ch - renderH) / 2;
+                ctx.save(); ctx.translate(cw, 0); ctx.scale(-1, 1);
+                ctx.drawImage(latestFrame, 0, 0, vw, vh, cw - offsetX - renderW, offsetY, renderW, renderH);
+                ctx.restore();
+            }
+            if (!game.isRunning) return;
+            if (playerFace) {
+                const nose = getFacePointCoordinates(playerFace[1]);
+                const mouth = getFacePointCoordinates(playerFace[13]);
+                ctx.lineWidth = 4;
+                if (game.id === 'sushi') {
+                    ctx.beginPath(); ctx.arc(mouth.x, mouth.y + 10, 25, 0, 2 * Math.PI);
+                    ctx.strokeStyle = ((playerFace[14].y - playerFace[13].y) > 0.04) ? '#4ade80' : '#ef4444'; ctx.stroke();
+                } else if (game.id === 'dodge') {
+                    ctx.beginPath(); ctx.arc(nose.x, nose.y, 30, 0, 2 * Math.PI); ctx.strokeStyle = '#3b82f6'; ctx.stroke();
+                } else if (game.id === 'smile') {
+                    const faceWidth = Math.abs(playerFace[234].x - playerFace[454].x);
+                    const isSmiling = (Math.abs(playerFace[291].x - playerFace[61].x) / faceWidth) > 0.45;
+                    ctx.beginPath(); ctx.arc(nose.x, nose.y, 35, 0, 2 * Math.PI);
+                    ctx.strokeStyle = isSmiling ? '#fbbf24' : '#ef4444'; ctx.stroke();
+                }
+            }
+            ctx.font = "42px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            game.items.forEach(item => { ctx.fillText(item.emoji, item.x, item.y); });
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            processGameLogic();
+            drawGame();
+            requestAnimationFrame(gameLoop);
+        }
+
+        async function initAI() {
+            faceMesh = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}` });
+            faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+            faceMesh.onResults((results) => {
+                latestFrame = results.image;
+                if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                    playerFace = results.multiFaceLandmarks[0];
+                    if (!isAILoaded) {
+                        isAILoaded = true;
+                        document.getElementById('loadingUI').classList.add('hidden');
+                        document.getElementById('loadingUI').classList.remove('flex');
+                        updateCanvasDimensions();
+                        game.isRunning = true;
+                        requestAnimationFrame(gameLoop);
+                    }
+                } else { playerFace = null; }
+            });
+            camera = new Camera(video, { onFrame: async () => { await faceMesh.send({ image: video }); }, width: 640, height: 480 });
+            await camera.start();
+        }
+    </script>
+</body>
+
+</html>
