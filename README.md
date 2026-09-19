@@ -44,7 +44,7 @@
 ---
 
 ## 📂 Project Architecture Structure
-```text
+
 Web_dev_project/
 ├── my-api/                  # Backend Service (FastAPI & PostgreSQL Connection)
 │   ├── Dockerfile           # กำหนด Environment และคำสั่งรัน Uvicorn Server
