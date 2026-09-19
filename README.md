@@ -87,5 +87,7 @@ docker compose up -d --build
 2.67160326 นายชัชชนม์ โทสวนจิตร
 
 
-<img width="1920" height="1080" alt="architecture" src="https://github.com/user-attachments/assets/7e17addf-9532-44ab-8e80-096b401690ee" />
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/7e17addf-9532-44ab-8e80-096b..." alt="architecture" width="100%" />
+</div>
 
