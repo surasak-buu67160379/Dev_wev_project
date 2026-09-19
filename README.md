@@ -87,4 +87,5 @@ docker compose up -d --build
 2.67160326 นายชัชชนม์ โทสวนจิตร
 
 
-![System Architecture Diagram](./architecture.png)
+<img width="1920" height="1080" alt="architecture" src="https://github.com/user-attachments/assets/7e17addf-9532-44ab-8e80-096b401690ee" />
+
