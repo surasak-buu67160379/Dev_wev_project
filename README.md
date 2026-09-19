@@ -86,8 +86,5 @@ docker compose up -d --build
 1.67160379 นายสุรศักดิ์ นึกรักษ์ 
 2.67160326 นายชัชชนม์ โทสวนจิตร
 
-
-<div align="center">
-  <img src="https://github.com/user-attachments/assets/7e17addf-9532-44ab-8e80-096b..." alt="architecture" width="100%" />
-</div>
+![architecture](https://github.com/user-attachments/assets/c3412c3f-7c8b-439d-a1be-ae77609b4a97)
 
